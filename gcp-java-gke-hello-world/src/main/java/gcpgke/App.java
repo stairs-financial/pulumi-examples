@@ -42,12 +42,11 @@ public class App {
     private static void stack(Context ctx) {
         final String name = "helloworld";
 
-        final var masterVersion = ctx.config().get("masterVersion").orElse(
-                ContainerFunctions.getEngineVersions()
-                .thenApply(GetEngineVersionsResult::latestMasterVersion).join()
-        );
+        final var masterVersion = ctx.config().get("masterVersion").map(Output::of)
+            .orElseGet(() -> ContainerFunctions.getEngineVersions()
+                       .applyValue(versions -> versions.latestMasterVersion()));
 
-        ctx.export("masterVersion", Output.of(masterVersion));
+        ctx.export("masterVersion", masterVersion);
 
         // Create a GKE cluster
         // We can't create a cluster with no node pool defined, but we want to only use
