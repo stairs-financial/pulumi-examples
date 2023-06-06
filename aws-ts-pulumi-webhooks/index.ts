@@ -3,6 +3,7 @@
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
 import { IncomingWebhook, IncomingWebhookSendArguments } from "@slack/webhook";
+import { Logger } from '@aws-lambda-powertools/logger';
 
 import * as crypto from "crypto";
 
@@ -23,7 +24,7 @@ const stackConfig = {
 function logRequest(req: awsx.apigateway.Request) {
     const webhookID = req.headers !== undefined ? req.headers["pulumi-webhook-id"] : "";
     const webhookKind = req.headers !== undefined ? req.headers["pulumi-webhook-kind"] : "";
-    console.log(`Received webhook from Pulumi ${webhookID} [${webhookKind}]`);
+    new Logger().info("Received webhook from Pulumi", { webhookID, webhookKind });
 }
 
 // Webhooks can optionally be configured with a shared secret, so that webhook handlers like this app can authenticate
@@ -40,7 +41,7 @@ function authenticateRequest(req: awsx.apigateway.Request): awsx.apigateway.Resp
 
     const result = crypto.timingSafeEqual(Buffer.from(webhookSig), Buffer.from(hmac));
     if (!result) {
-        console.log(`Mismatch between expected signature and HMAC: '${webhookSig}' vs. '${hmac}'.`);
+        new Logger().warn("Mismatch between expected signature and HMAC", { webhookSig, hmac });
         return { statusCode: 400, body: "Unable to authenticate message: Mismatch between signature and HMAC" };
     }
 
